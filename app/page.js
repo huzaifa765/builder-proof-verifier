@@ -37,13 +37,15 @@ export default function Home() {
   };
 
   const getWalletClient = async () => {
-    if (!window.ethereum) throw new Error("MetaMask not found");
-    await window.ethereum.request({ method: "eth_requestAccounts" });
-    return createClient({
-      chain: testnetBradbury,
-      request: window.ethereum.request.bind(window.ethereum),
-    });
-  };
+  if (!window.ethereum) throw new Error("MetaMask not found");
+  const accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
+  setWalletAddress(accounts[0]);
+  return createClient({
+    chain: testnetBradbury,
+    account: accounts[0],
+    request: window.ethereum.request.bind(window.ethereum),
+  });
+};
 
   const showMessage = (msg, type = "success") => {
     setMessage(msg);
