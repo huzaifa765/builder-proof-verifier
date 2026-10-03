@@ -167,7 +167,7 @@ export default function Home() {
           <span style={{ fontSize: "12px", color: "#f97316", fontWeight: "600" }}>Powered by GenLayer AI</span>
         </div>
         <h1 style={{ fontSize: "48px", fontWeight: "800", margin: "0 0 16px", lineHeight: "1.1" }}>
-          AI-Powered Builder
+          BuilderProofVerifier
           <br />
           <span style={{ background: "linear-gradient(90deg, #f97316, #fb923c, #fbbf24)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>Proof Verification</span>
         </h1>

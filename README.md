@@ -1,36 +1,47 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# BuilderProofVerifier 🔍
 
-## Getting Started
+AI-powered builder proof verification system built on GenLayer Bradbury Testnet.
 
-First, run the development server:
+## What is this?
+
+BuilderProofVerifier is an Intelligent Contract dApp that uses GenLayer's AI validators to verify builder proofs on-chain. Multiple independent AI validators analyze GitHub repositories and project summaries to reach consensus on whether work is genuine.
+
+## How it works
+
+1. **Submit Proof** — Builder submits their GitHub URL, demo URL, and project summary
+2. **Judge Proof** — AI validators independently fetch GitHub content and analyze the work
+3. **Consensus** — GenLayer's Equivalence Principle ensures validators agree on a verdict
+4. **Verdict** — SHIPPED / WEAK / FAKE / NEEDS_MORE_EVIDENCE stored on-chain
+
+## Tech Stack
+
+- **Intelligent Contract** — Python on GenLayer Bradbury Testnet
+- **Frontend** — Next.js 16, Tailwind CSS
+- **SDK** — genlayer-js
+- **Deployment** — Netlify
+
+## Contract
+
+- **Address:** `0x955E63b344A23Ca1bAA763Cf1eAf2a5aC69Cd334`
+- **Network:** GenLayer Bradbury Testnet
+
+## Local Setup
 
 ```bash
+git clone https://github.com/huzaifa765/builder-proof-verifier
+cd builder-proof-verifier
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Features
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
+- Submit builder proofs with GitHub + demo evidence
+- AI-powered judgment via GenLayer validators
+- On-chain verdict storage
+- Real-time consensus tracking
+- MetaMask wallet integration
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Builder
 
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Built by [@huzaifa765](https://github.com/huzaifa765) for GenLayer Builder Program
