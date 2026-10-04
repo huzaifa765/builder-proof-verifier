@@ -4,7 +4,7 @@ import { useState } from "react";
 import { createClient } from "genlayer-js";
 import { testnetBradbury } from "genlayer-js/chains";
 
-const CONTRACT_ADDRESS = "0x955E63b344A23Ca1bAA763Cf1eAf2a5aC69Cd334";
+const CONTRACT_ADDRESS = "0x71323Ec18D9379A7075De76C7ac28878c47e6764";
 
 const readClient = createClient({ chain: testnetBradbury });
 
@@ -17,6 +17,7 @@ export default function Home() {
 
   const [proofId, setProofId] = useState("");
   const [githubUrl, setGithubUrl] = useState("");
+  const [commitHash, setCommitHash] = useState("");
   const [demoUrl, setDemoUrl] = useState("");
   const [summary, setSummary] = useState("");
 
@@ -37,15 +38,15 @@ export default function Home() {
   };
 
   const getWalletClient = async () => {
-  if (!window.ethereum) throw new Error("MetaMask not found");
-  const accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
-  setWalletAddress(accounts[0]);
-  return createClient({
-    chain: testnetBradbury,
-    account: accounts[0],
-    request: window.ethereum.request.bind(window.ethereum),
-  });
-};
+    if (!window.ethereum) throw new Error("MetaMask not found");
+    const accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
+    setWalletAddress(accounts[0]);
+    return createClient({
+      chain: testnetBradbury,
+      account: accounts[0],
+      request: window.ethereum.request.bind(window.ethereum),
+    });
+  };
 
   const showMessage = (msg, type = "success") => {
     setMessage(msg);
@@ -54,8 +55,8 @@ export default function Home() {
   };
 
   const handleSubmitProof = async () => {
-    if (!proofId || !summary) {
-      showMessage("Proof ID and Summary are required", "error");
+    if (!proofId || !summary || !githubUrl || !commitHash) {
+      showMessage("Proof ID, GitHub URL, Commit Hash and Summary are required", "error");
       return;
     }
     try {
@@ -64,10 +65,10 @@ export default function Home() {
       const tx = await client.writeContract({
         address: CONTRACT_ADDRESS,
         functionName: "submit_proof",
-        args: [proofId, githubUrl, demoUrl, summary],
+        args: [proofId, githubUrl, commitHash, demoUrl, summary],
       });
       showMessage(`✅ Proof submitted! TX: ${tx.slice(0, 20)}...`);
-      setProofId(""); setGithubUrl(""); setDemoUrl(""); setSummary("");
+      setProofId(""); setGithubUrl(""); setCommitHash(""); setDemoUrl(""); setSummary("");
     } catch (err) {
       showMessage(err.message, "error");
     } finally {
@@ -174,7 +175,7 @@ export default function Home() {
           <span style={{ background: "linear-gradient(90deg, #f97316, #fb923c, #fbbf24)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>Proof Verification</span>
         </h1>
         <p style={{ color: "#9ca3af", fontSize: "18px", maxWidth: "500px", margin: "0 auto 40px", lineHeight: "1.6" }}>
-          Submit your builder proof. Multiple AI validators analyze your work and reach consensus on-chain.
+          Submit your builder proof with immutable commit hash. Multiple AI validators verify your work on-chain.
         </p>
 
         {/* Stats */}
@@ -223,13 +224,14 @@ export default function Home() {
             <div>
               <div style={{ marginBottom: "24px" }}>
                 <h2 style={{ fontSize: "20px", fontWeight: "700", margin: "0 0 6px" }}>Submit Builder Proof</h2>
-                <p style={{ color: "#6b7280", fontSize: "14px", margin: 0 }}>Provide evidence of your work. AI validators will review your GitHub and demo.</p>
+                <p style={{ color: "#6b7280", fontSize: "14px", margin: 0 }}>Provide evidence with immutable commit hash. AI validators will verify your GitHub at that exact commit.</p>
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
                 {[
-                  { label: "Proof ID *", value: proofId, set: setProofId, placeholder: "e.g. basestaking_001", type: "input" },
-                  { label: "GitHub Repository URL", value: githubUrl, set: setGithubUrl, placeholder: "https://github.com/yourname/project", type: "input" },
-                  { label: "Live Demo URL", value: demoUrl, set: setDemoUrl, placeholder: "https://yourproject.netlify.app", type: "input" },
+                  { label: "Proof ID *", value: proofId, set: setProofId, placeholder: "e.g. basestaking_001" },
+                  { label: "GitHub Repository URL *", value: githubUrl, set: setGithubUrl, placeholder: "https://github.com/yourname/project" },
+                  { label: "Commit Hash *", value: commitHash, set: setCommitHash, placeholder: "e.g. a1b2c3d4e5f6789..." },
+                  { label: "Live Demo URL", value: demoUrl, set: setDemoUrl, placeholder: "https://yourproject.netlify.app" },
                 ].map((f) => (
                   <div key={f.label}>
                     <label style={{ fontSize: "13px", color: "#9ca3af", fontWeight: "500", display: "block", marginBottom: "6px" }}>{f.label}</label>
@@ -239,6 +241,9 @@ export default function Home() {
                 <div>
                   <label style={{ fontSize: "13px", color: "#9ca3af", fontWeight: "500", display: "block", marginBottom: "6px" }}>Project Summary *</label>
                   <textarea value={summary} onChange={(e) => setSummary(e.target.value)} placeholder="Describe what you built, key features, tech stack, and why it matters..." rows={4} style={{ width: "100%", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "8px", padding: "10px 14px", color: "white", fontSize: "14px", outline: "none", resize: "vertical", boxSizing: "border-box" }} />
+                </div>
+                <div style={{ background: "rgba(249,115,22,0.06)", border: "1px solid rgba(249,115,22,0.15)", borderRadius: "8px", padding: "12px" }}>
+                  <p style={{ margin: 0, fontSize: "12px", color: "#fb923c" }}>💡 Get your commit hash from GitHub: go to your repo → Commits → copy the full hash of the commit you want to verify.</p>
                 </div>
                 <button onClick={handleSubmitProof} disabled={loading} style={{ width: "100%", background: loading ? "rgba(249,115,22,0.5)" : "linear-gradient(135deg, #f97316, #ea580c)", border: "none", borderRadius: "10px", padding: "14px", color: "white", fontSize: "15px", fontWeight: "700", cursor: loading ? "not-allowed" : "pointer", marginTop: "8px" }}>
                   {loading ? "⏳ Submitting to blockchain..." : "📤 Submit Proof"}
@@ -252,11 +257,11 @@ export default function Home() {
             <div>
               <div style={{ marginBottom: "24px" }}>
                 <h2 style={{ fontSize: "20px", fontWeight: "700", margin: "0 0 6px" }}>Judge a Proof</h2>
-                <p style={{ color: "#6b7280", fontSize: "14px", margin: 0 }}>Trigger AI consensus. Multiple validators independently analyze the proof and agree on a verdict.</p>
+                <p style={{ color: "#6b7280", fontSize: "14px", margin: 0 }}>Trigger AI consensus. Validators fetch the immutable commit and verify the actual code.</p>
               </div>
               <div style={{ background: "rgba(249,115,22,0.06)", border: "1px solid rgba(249,115,22,0.15)", borderRadius: "10px", padding: "16px", marginBottom: "20px" }}>
                 <p style={{ margin: 0, fontSize: "13px", color: "#fb923c", lineHeight: "1.6" }}>
-                  ⚡ <strong>How it works:</strong> GenLayer's AI validators fetch your GitHub, analyze the code, and use LLM reasoning to reach consensus. This takes 2-3 minutes.
+                  ⚡ <strong>How it works:</strong> GenLayer validators fetch your GitHub at the exact commit hash, analyze the actual code files, and reach consensus on whether the work matches your claims.
                 </p>
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
@@ -289,10 +294,11 @@ export default function Home() {
                 <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "12px", padding: "20px", marginBottom: "16px" }}>
                   <p style={{ fontSize: "12px", color: "#6b7280", fontWeight: "600", textTransform: "uppercase", letterSpacing: "1px", margin: "0 0 12px" }}>Submission Details</p>
                   <div style={{ display: "flex", flexDirection: "column", gap: "8px", fontSize: "14px" }}>
-                    <div style={{ display: "flex", gap: "8px" }}><span style={{ color: "#6b7280", minWidth: "80px" }}>Proof ID:</span><span style={{ color: "#e5e7eb" }}>{submission.proof_id}</span></div>
-                    <div style={{ display: "flex", gap: "8px" }}><span style={{ color: "#6b7280", minWidth: "80px" }}>GitHub:</span><a href={submission.github_url} target="_blank" rel="noreferrer" style={{ color: "#f97316", textDecoration: "none" }}>{submission.github_url || "N/A"}</a></div>
-                    <div style={{ display: "flex", gap: "8px" }}><span style={{ color: "#6b7280", minWidth: "80px" }}>Demo:</span><a href={submission.demo_url} target="_blank" rel="noreferrer" style={{ color: "#f97316", textDecoration: "none" }}>{submission.demo_url || "N/A"}</a></div>
-                    <div style={{ display: "flex", gap: "8px" }}><span style={{ color: "#6b7280", minWidth: "80px" }}>Summary:</span><span style={{ color: "#e5e7eb" }}>{submission.summary}</span></div>
+                    <div style={{ display: "flex", gap: "8px" }}><span style={{ color: "#6b7280", minWidth: "100px" }}>Proof ID:</span><span style={{ color: "#e5e7eb" }}>{submission.proof_id}</span></div>
+                    <div style={{ display: "flex", gap: "8px" }}><span style={{ color: "#6b7280", minWidth: "100px" }}>GitHub:</span><a href={submission.github_repo} target="_blank" rel="noreferrer" style={{ color: "#f97316", textDecoration: "none" }}>{submission.github_repo || "N/A"}</a></div>
+                    <div style={{ display: "flex", gap: "8px" }}><span style={{ color: "#6b7280", minWidth: "100px" }}>Commit Hash:</span><span style={{ color: "#e5e7eb", fontFamily: "monospace", fontSize: "12px" }}>{submission.commit_hash || "N/A"}</span></div>
+                    <div style={{ display: "flex", gap: "8px" }}><span style={{ color: "#6b7280", minWidth: "100px" }}>Demo:</span><a href={submission.demo_url} target="_blank" rel="noreferrer" style={{ color: "#f97316", textDecoration: "none" }}>{submission.demo_url || "N/A"}</a></div>
+                    <div style={{ display: "flex", gap: "8px" }}><span style={{ color: "#6b7280", minWidth: "100px" }}>Summary:</span><span style={{ color: "#e5e7eb" }}>{submission.summary}</span></div>
                   </div>
                 </div>
               )}
@@ -310,6 +316,18 @@ export default function Home() {
                     </div>
                     {p && (
                       <div style={{ display: "flex", flexDirection: "column", gap: "12px", fontSize: "14px" }}>
+                        {p.commit_verified !== undefined && (
+                          <div>
+                            <p style={{ color: "#6b7280", margin: "0 0 6px", fontSize: "12px", fontWeight: "600", textTransform: "uppercase" }}>
+                              Commit Verified: <span style={{ color: p.commit_verified ? "#22c55e" : "#ef4444" }}>{p.commit_verified ? "✅ Yes" : "❌ No"}</span>
+                            </p>
+                          </div>
+                        )}
+                        {p.file_count !== undefined && (
+                          <div>
+                            <p style={{ color: "#6b7280", margin: "0 0 6px", fontSize: "12px", fontWeight: "600", textTransform: "uppercase" }}>Files Found: {p.file_count}</p>
+                          </div>
+                        )}
                         <div>
                           <p style={{ color: "#6b7280", margin: "0 0 6px", fontSize: "12px", fontWeight: "600", textTransform: "uppercase" }}>Evidence Quality: {p.evidence_quality}</p>
                         </div>
