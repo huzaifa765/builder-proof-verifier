@@ -2,7 +2,6 @@
 
 from genlayer import *
 import json
-import typing
 
 class BuilderProofVerifier(gl.Contract):
 
@@ -21,16 +20,18 @@ class BuilderProofVerifier(gl.Contract):
     def submit_proof(
         self,
         proof_id: str,
-        github_url: str,
+        github_repo: str,
+        commit_hash: str,
         demo_url: str,
         summary: str
     ) -> None:
-        if not proof_id or not summary:
-            raise Exception("proof_id and summary are required")
+        if not proof_id or not summary or not github_repo or not commit_hash:
+            raise Exception("proof_id, github_repo, commit_hash and summary are required")
 
         submission = json.dumps({
             "proof_id": proof_id,
-            "github_url": github_url,
+            "github_repo": github_repo,
+            "commit_hash": commit_hash,
             "demo_url": demo_url,
             "summary": summary,
             "submitter": str(gl.message.sender_address),
@@ -47,38 +48,86 @@ class BuilderProofVerifier(gl.Contract):
 
         submission = json.loads(submission_raw)
 
+        github_repo = submission.get("github_repo", "")
+        commit_hash = submission.get("commit_hash", "")
+
+        # Build immutable raw GitHub URL using specific commit hash
+        # e.g. https://github.com/user/repo -> https://api.github.com/repos/user/repo/commits/HASH
+        repo_path = github_repo.replace("https://github.com/", "")
+        raw_tree_url = f"https://api.github.com/repos/{repo_path}/git/trees/{commit_hash}?recursive=1"
+        commit_url = f"https://api.github.com/repos/{repo_path}/commits/{commit_hash}"
+
         def get_leader_result() -> str:
-            web_data = ""
-            if submission.get("github_url"):
-                try:
-                    response = gl.nondet.web.get(submission["github_url"])
-                    web_data = response.body.decode("utf-8")[:1500]
-                except:
-                    web_data = "GitHub data unavailable"
+            # Fetch commit details — immutable proof
+            commit_data = ""
+            try:
+                response = gl.nondet.web.get(commit_url)
+                commit_data = response.body.decode("utf-8")[:2000]
+            except:
+                commit_data = "Commit data unavailable"
+
+            # Fetch file tree at that commit — immutable snapshot
+            tree_data = ""
+            try:
+                response2 = gl.nondet.web.get(raw_tree_url)
+                tree_data = response2.body.decode("utf-8")[:2000]
+            except:
+                tree_data = "Tree data unavailable"
 
             prompt = f"""You are an impartial GenLayer validator reviewing a builder proof submission.
 
-Builder summary: {submission['summary']}
-GitHub content: {web_data}
+Builder Summary: {submission['summary']}
+GitHub Repository: {github_repo}
+Commit Hash (immutable): {commit_hash}
 
-Based on this evidence, evaluate the submission and return ONLY valid JSON in this exact format with no extra text:
-{{"verdict": "SHIPPED", "score": 80, "evidence_quality": "MEDIUM", "reasons": ["reason here"], "risk_flags": [], "confidence": "MEDIUM"}}
+Commit Details fetched from GitHub API:
+{commit_data}
 
-verdict must be one of: SHIPPED, WEAK, FAKE, NEEDS_MORE_EVIDENCE
-score must be integer 0-100
-evidence_quality must be: LOW, MEDIUM, or HIGH
-confidence must be: LOW, MEDIUM, or HIGH"""
+Repository File Tree at this commit:
+{tree_data}
+
+Your task:
+1. Check if the commit hash is real and matches an actual commit in the repository
+2. Verify the repository contains actual code files (not empty or boilerplate only)
+3. Check if the files match what the builder claimed in their summary
+4. Assess the quality and genuineness of the work
+
+Return ONLY this exact JSON:
+{{"verdict": "SHIPPED", "score": 80, "evidence_quality": "HIGH", "commit_verified": true, "file_count": 5, "reasons": ["reason1", "reason2"], "risk_flags": [], "confidence": "HIGH"}}
+
+verdict must be: SHIPPED, WEAK, FAKE, or NEEDS_MORE_EVIDENCE
+score: integer 0-100
+evidence_quality: LOW, MEDIUM, or HIGH
+commit_verified: true if commit hash exists and matches repo, false otherwise
+file_count: estimated number of code files found
+confidence: LOW, MEDIUM, or HIGH"""
 
             return gl.nondet.exec_prompt(prompt)
 
         def validator_fn(leader_result: str) -> bool:
-            prompt = f"""A GenLayer leader validator evaluated a builder proof and returned this result:
-{leader_result}
+            # Validator independently fetches same immutable commit and verifies
+            independent_data = ""
+            try:
+                response = gl.nondet.web.get(commit_url)
+                independent_data = response.body.decode("utf-8")[:1000]
+            except:
+                independent_data = "unavailable"
 
-The builder's summary was: {submission['summary']}
+            prompt = f"""You are an independent GenLayer validator.
 
-Is this verdict reasonable and fair based on the evidence? Reply with only the word: true or false"""
-            
+The leader validator reviewed this builder proof:
+Repository: {github_repo}
+Commit Hash: {commit_hash}
+Builder Summary: {submission['summary']}
+
+Leader verdict: {leader_result}
+
+You independently fetched the same commit:
+{independent_data}
+
+Does the leader verdict correctly reflect what the commit evidence shows?
+Reply with only: true or false"""
+
             output = gl.nondet.exec_prompt(prompt)
             return "true" in output.strip().lower()
 
@@ -87,6 +136,7 @@ Is this verdict reasonable and fair based on the evidence? Reply with only the w
         self.verdicts[proof_id] = json.dumps({
             "proof_id": proof_id,
             "verdict_raw": result,
+            "commit_hash": commit_hash,
             "judged": True
         })
 
